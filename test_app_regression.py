@@ -294,14 +294,17 @@ class AppRegressionTests(unittest.TestCase):
                 self.assertEqual(self.output.getvalue().count("Vote count:"), min(count, 5))
         self.http.get.assert_not_called()
 
-    def test_rating_input_rejects_nonfinite_and_out_of_range(self):
-        for inputs in (("nan", "8"), ("0", "inf"), ("-inf", "10"),
-                       ("-1", "8"), ("0", "11")):
-            with self.subTest(inputs=inputs), patch("builtins.input", side_effect=inputs):
-                self.rejects(self.app.choose_rating_range, "Ratings must be between 0 and 10")
-        with patch("builtins.input", side_effect=["0", "10"]):
-            self.assertEqual(self.app.choose_rating_range(), (0.0, 10.0))
-
+    def test_rating_input_recovers_and_preserves_valid_minimum(self):
+        cases = (
+            (["bad", "nan", "-inf", "-1", "11", "0", "10"], (0.0, 10.0)),
+            (["6", "bad", "inf", "nan", "-1", "11", "5", "8"], (6.0, 8.0)),
+        )
+        for inputs, expected in cases:
+            with self.subTest(inputs=inputs), patch("builtins.input", side_effect=inputs) as prompt:
+                self.assertEqual(self.app.choose_rating_range(), expected)
+                self.assertEqual(prompt.call_count, len(inputs))
+        self.assertIn("Ratings must be between 0 and 10", self.output.getvalue())
+        self.assertIn("minimum rating cannot be greater", self.output.getvalue())
     def test_strict_flow_preserves_discover_order_without_style_searches(self):
         # Exercise orchestration with every interactive boundary replaced.
         with ExitStack() as stack:
@@ -339,14 +342,42 @@ class AppRegressionTests(unittest.TestCase):
     def test_year_limits_and_reversed_ranges(self):
         with patch("builtins.input", side_effect=["1888", str(self.app.ano_atual)]):
             self.assertEqual(self.app.choose_year_range(), (1888, self.app.ano_atual))
-        for inputs, message in ((["1887", "2000"], "from 1888 onward"),
-                                (["2001", "2000"], "cannot be greater"),
-                                (["1888", str(self.app.ano_atual + 1)], "Please enter years")):
-            with self.subTest(inputs=inputs), patch("builtins.input", side_effect=inputs):
-                with self.assertRaises(SystemExit):
-                    self.app.choose_year_range()
-                self.assertIn(message, self.output.getvalue())
+        inputs = ["bad", "1887", str(self.app.ano_atual + 1), "2001",
+                  "bad", "1887", str(self.app.ano_atual + 1), "2000", "2020"]
+        with patch("builtins.input", side_effect=inputs) as prompt:
+            self.assertEqual(self.app.choose_year_range(), (2001, 2020))
+        self.assertEqual(prompt.call_count, len(inputs))
+        self.assertEqual(prompt.call_args_list[-1].args, ("What is the end year? ",))
+        self.assertIn("cannot be greater", self.output.getvalue())
 
+    def test_genre_and_matching_mode_recover_from_invalid_input(self):
+        cases = (
+            (self.app.choose_genre, ["bad", "0", "999", "12"], "horror"),
+            (self.app.choose_keyword_match_mode, ["bad", "0", "3", "1"], "broad"),
+            (self.app.choose_keyword_match_mode, ["-1", "2"], "strict"),
+        )
+        for operation, inputs, expected in cases:
+            with self.subTest(operation=operation.__name__), patch("builtins.input", side_effect=inputs) as prompt:
+                self.assertEqual(operation(), expected)
+                self.assertEqual(prompt.call_count, len(inputs))
+
+    def test_style_and_country_recovery_keeps_selections(self):
+        cases = (
+            (self.app.choose_keyword, ["slasher", "vampire"]),
+            (self.app.choose_country, ["AR", "AU"]),
+        )
+        for operation, expected in cases:
+            inputs = ["1", "bad", "-1", "999", "1", "2", "0"]
+            with self.subTest(operation=operation.__name__), patch("builtins.input", side_effect=inputs) as prompt:
+                self.assertEqual(operation(), expected)
+                self.assertEqual(prompt.call_count, len(inputs))
+
+    def test_five_unique_styles_finish_without_another_prompt(self):
+        inputs = ["1", "1", "bad", "2", "3", "4", "5"]
+        with patch("builtins.input", side_effect=inputs) as prompt:
+            self.assertEqual(self.app.choose_keyword(), list(self.app.subgeneros)[:5])
+            self.assertEqual(prompt.call_count, len(inputs))
+        self.assertIn("Maximum of 5", self.output.getvalue())
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

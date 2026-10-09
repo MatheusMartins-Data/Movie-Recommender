@@ -198,15 +198,17 @@ def choose_genre():
 
     print()
 
-    try:
-        escolha_genero = int(input("Choose the genre number: "))
-    except ValueError:
-        print("Please enter a number.")
-        exit()
+    while True:
+        try:
+            escolha_genero = int(input("Choose the genre number: "))
+        except ValueError:
+            print("Please enter a number.")
+            continue
 
-    if escolha_genero < 1 or escolha_genero > len(lista_generos):
-        print("Invalid option.")
-        exit()
+        if escolha_genero < 1 or escolha_genero > len(lista_generos):
+            print("Invalid option.")
+            continue
+        break
 
     genero_escolhido = lista_generos[escolha_genero - 1]
 
@@ -234,11 +236,11 @@ def choose_keyword():
             escolha_subgenero = int(input("Choose the style/keyword number: "))
         except ValueError:
             print("Please enter a number.")
-            exit()
+            continue
 
         if escolha_subgenero < 0 or escolha_subgenero > len(lista_subgeneros):
             print("Invalid option.")
-            exit()
+            continue
 
         if escolha_subgenero == 0:
             break
@@ -277,15 +279,17 @@ def choose_keyword_match_mode():
     print("2 - Strict (match all)")
     print()
 
-    try:
-        escolha = int(input("Choose the matching mode number: "))
-    except ValueError:
-        print("Please enter a number.")
-        exit()
+    while True:
+        try:
+            escolha = int(input("Choose the matching mode number: "))
+        except ValueError:
+            print("Please enter a number.")
+            continue
 
-    if escolha not in (1, 2):
-        print("Invalid option.")
-        exit()
+        if escolha not in (1, 2):
+            print("Invalid option.")
+            continue
+        break
 
     print()
 
@@ -312,11 +316,11 @@ def choose_country():
             escolha_pais = int(input("Choose the country number: "))
         except ValueError:
             print("Please enter a number.")
-            exit()
+            continue
 
         if escolha_pais < 0 or escolha_pais > len(lista_paises):
             print("Invalid option.")
-            exit()
+            continue
 
         if escolha_pais == 0:
             break
@@ -348,50 +352,57 @@ def choose_country():
     return paises_escolhidos
 
 def choose_year_range():
-    try:
-        ano_inicial = int(input("What is the start year? "))
-        ano_final = int(input("What is the end year? "))
-    except ValueError:
-        print("Please enter a valid year.")
-        exit()
+    while True:
+        try:
+            ano_inicial = int(input("What is the start year? "))
+        except ValueError:
+            print("Please enter a valid year.")
+            continue
+        if not MIN_MOVIE_YEAR <= ano_inicial <= ano_atual:
+            print(f"Please enter a year between {MIN_MOVIE_YEAR} and {ano_atual}.")
+            continue
+        break
 
-    if ano_inicial < MIN_MOVIE_YEAR or ano_final < MIN_MOVIE_YEAR:
-        print(f"This search supports movies from {MIN_MOVIE_YEAR} onward.")
-        print(f"Please enter a year between {MIN_MOVIE_YEAR} and {ano_atual}.")
-        exit()
+    while True:
+        try:
+            ano_final = int(input("What is the end year? "))
+        except ValueError:
+            print("Please enter a valid year.")
+            continue
+        if not MIN_MOVIE_YEAR <= ano_final <= ano_atual:
+            print(f"Please enter a year between {MIN_MOVIE_YEAR} and {ano_atual}.")
+            continue
+        if ano_inicial > ano_final:
+            print("The start year cannot be greater than the end year.")
+            continue
+        return ano_inicial, ano_final
 
-    if ano_inicial > ano_final:
-        print("The start year cannot be greater than the end year.")
-        exit()
-
-    if ano_inicial > ano_atual or ano_final > ano_atual:
-        print(f"Please enter years between {MIN_MOVIE_YEAR} and {ano_atual}.")
-        exit()
-
-    return ano_inicial, ano_final
 
 def choose_rating_range():
-    try:
-        nota_minima = float(input("What is the minimum rating? "))
-        nota_maxima = float(input("What is the maximum rating? "))
-    except ValueError:
-        print("Please enter a valid rating.")
-        exit()
+    while True:
+        try:
+            nota_minima = float(input("What is the minimum rating? "))
+        except ValueError:
+            print("Please enter a valid rating.")
+            continue
+        if not math.isfinite(nota_minima) or not 0 <= nota_minima <= 10:
+            print("Ratings must be between 0 and 10.")
+            continue
+        break
 
-    if (
-        not math.isfinite(nota_minima)
-        or not math.isfinite(nota_maxima)
-        or not 0 <= nota_minima <= 10
-        or not 0 <= nota_maxima <= 10
-    ):
-        print("Ratings must be between 0 and 10.")
-        raise SystemExit(1)
-
-    if nota_minima > nota_maxima:
-        print("The minimum rating cannot be greater than the maximum rating.")
-        exit()
-
-    return nota_minima, nota_maxima
+    while True:
+        try:
+            nota_maxima = float(input("What is the maximum rating? "))
+        except ValueError:
+            print("Please enter a valid rating.")
+            continue
+        if not math.isfinite(nota_maxima) or not 0 <= nota_maxima <= 10:
+            print("Ratings must be between 0 and 10.")
+            continue
+        if nota_minima > nota_maxima:
+            print("The minimum rating cannot be greater than the maximum rating.")
+            continue
+        return nota_minima, nota_maxima
 
 def build_parameters(
     genero_escolhido,
