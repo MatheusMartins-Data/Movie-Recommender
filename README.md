@@ -2,11 +2,22 @@
 
 This Python program runs in the terminal and suggests up to five movies from TMDB. You choose a genre, optional styles and countries, a release-year range, and a rating range.
 
-For each movie, it shows the title, rating, vote count, genres, production countries, release date, and overview when available. If you select styles, it also shows which ones match the movie's TMDB keywords.
+For each movie, it shows the title, rating, genres, production countries, release date, and overview when available. If you select styles, it also shows which ones match the movie's TMDB keywords.
 
 ## Install on Windows
 
-Tested with Python 3.14.8 using a separate virtual environment: dependency installation, `pip check`, and all 24 simulated regression tests passed. Compatibility with other Python versions has not been verified. Install Python with the Windows Python launcher. Open PowerShell in the project folder and run:
+Tested with Python 3.14.8 using a separate virtual environment: dependency installation, `pip check`, and all 24 simulated regression tests passed. Compatibility with other Python versions has not been verified. Install Python with the Windows Python launcher.
+
+To clone the project, you need Git installed. Run:
+
+```powershell
+git clone https://github.com/MatheusMartins-Data/Movie-Recommender.git
+cd Movie-Recommender
+```
+
+Alternatively, select **Code > Download ZIP** on GitHub, extract the ZIP, and open a terminal in the extracted folder.
+
+From the project folder, create the virtual environment and install the dependencies:
 
 ```powershell
 py -m venv .venv
@@ -59,7 +70,7 @@ Choose menu options by number. Enter `0` when you finish selecting styles or cou
 | Release years | Include both the start and end years. Years must be between 1888 and the current year. The start year cannot be after the end year. The search uses primary release dates. |
 | Rating | Set a minimum and maximum TMDB average rating between 0 and 10. Both limits are included. The minimum cannot be higher than the maximum. Values such as `nan` and `inf` are rejected. |
 
-Every search requires at least 100 votes. TMDB searches are ordered by popularity, from highest to lowest, and request movie information in English (`en-US`).
+The program does not filter or select movies by vote count. The selected rating range still applies. TMDB searches are ordered by popularity, from highest to lowest, and request movie information in English (`en-US`).
 
 ### Broad and Strict
 
@@ -86,7 +97,7 @@ Choose the style/keyword number: 1
 Choose the style/keyword number: 2
 Choose the style/keyword number: 0
 Choose the matching mode number: 1
-Choose the country number: 0
+Choose the origin country number: 0
 What is the start year? 1980
 What is the end year? 2020
 What is the minimum rating? 6
@@ -98,9 +109,8 @@ Movies found: [total from the initial search]
 
 1. [movie title]
    Rating: [TMDB average rating]
-   Vote count: [vote count]
    Genres: [genres, including Horror]
-   Country: [production countries]
+   Production countries: [production countries]
    Matched styles: [Slasher, Vampire, or both]
    Release date: [Month DD, YYYY]
    Overview: [overview omitted]

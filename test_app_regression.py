@@ -21,7 +21,7 @@ class Timeout(RequestException):
 
 def movie(movie_id=1, **changes):
     result = {"id": movie_id, "title": f"Movie {movie_id}",
-              "vote_average": 7.5, "vote_count": 100}
+              "vote_average": 7.5}
     result.update(changes)
     return result
 
@@ -123,7 +123,7 @@ class AppRegressionTests(unittest.TestCase):
                 self.rejects(lambda: self.app.search_movies({}), message)
 
     def test_discover_required_fields_missing(self):
-        for field in ("id", "title", "vote_average", "vote_count"):
+        for field in ("id", "title", "vote_average"):
             with self.subTest(field=field):
                 item = movie()
                 del item[field]
@@ -136,7 +136,6 @@ class AppRegressionTests(unittest.TestCase):
             "title": [None, "", " \t\n", 4, True, []],
             "vote_average": [None, True, False, "7", [], -0.1, 10.1,
                              float("nan"), float("inf"), -float("inf"), 10**400],
-            "vote_count": [None, True, False, -1, 1.5, "100", []],
         }
         for field, values in invalid.items():
             for value in values:
@@ -158,6 +157,12 @@ class AppRegressionTests(unittest.TestCase):
                 self.rejects(lambda: self.discover(payload), "invalid Discover results")
 
     def test_valid_discover_boundaries_and_empty_results(self):
+        # Vote count is unused: absent and malformed values must be accepted.
+        for item in [movie()] + [movie(vote_count=value) for value in
+                                (None, True, False, -1, 1.5, "bad", [], {})]:
+            with self.subTest(item=item):
+                payload = {"results": [item], "total_results": 1}
+                self.assertEqual(self.discover(payload), payload)
         for rating in (0, 0.0, 7, 7.5, 10, 10.0):
             with self.subTest(rating=rating):
                 payload = {"results": [movie(title=" Valid ", vote_average=rating,
@@ -170,11 +175,12 @@ class AppRegressionTests(unittest.TestCase):
         expected = {"with_genres": 27, "primary_release_date.gte": "1980-01-01",
                     "primary_release_date.lte": "2020-12-31",
                     "vote_average.gte": 6, "vote_average.lte": 9,
-                    "vote_count.gte": 100, "sort_by": "popularity.desc",
+                    "sort_by": "popularity.desc",
                     "language": "en-US", "with_origin_country": "BR|JP"}
         for mode, keywords in (("broad", "12339|3133"), ("strict", "12339,3133")):
             with self.subTest(mode=mode):
                 params = self.parameters(mode)
+                self.assertNotIn("vote_count.gte", params)
                 self.assertEqual(params, dict(expected, with_keywords=keywords))
                 self.http.get.side_effect = None
                 self.http.get.return_value = response({"results": [], "total_results": 0})
@@ -208,6 +214,9 @@ class AppRegressionTests(unittest.TestCase):
         self.assertEqual(params, original)
         self.assertEqual(len(calls), 2)
         for sent in calls:
+            self.assertNotIn("vote_count.gte", sent)
+            self.assertEqual(sent["vote_average.gte"], 6)
+            self.assertEqual(sent["vote_average.lte"], 9)
             self.assertEqual({k: v for k, v in sent.items() if k != "with_keywords"},
                              {k: v for k, v in original.items() if k != "with_keywords"})
 
@@ -255,7 +264,7 @@ class AppRegressionTests(unittest.TestCase):
                 self.app.display_movies([movie(release_date=bad)], ["slasher"],
                     {1: {"genres": bad, "production_countries": bad, "keywords": bad}})
                 output = self.output.getvalue()
-                for label in ("Genres", "Country", "Matched styles", "Release date", "Overview"):
+                for label in ("Genres", "Production countries", "Matched styles", "Release date", "Overview"):
                     self.assertIn(f"{label}: Not available.", output)
 
     def test_valid_display_date_metadata_and_details_cache(self):
@@ -269,8 +278,9 @@ class AppRegressionTests(unittest.TestCase):
         self.app.display_movies([item], ["slasher"], cache)
         self.app.display_movies([item], ["slasher"], cache)
         self.http.get.assert_called_once()
-        for text in ("1. Movie 1", "Rating: 7.5", "Vote count: 100", "Genres: Horror",
-                     "Country: Brazil", "Matched styles: Slasher",
+        self.assertNotIn("Vote count:", self.output.getvalue())
+        for text in ("1. Movie 1", "Rating: 7.5", "Genres: Horror",
+                     "Production countries: Brazil", "Matched styles: Slasher",
                      "Release date: February 29, 2000", "Overview: A story."):
             self.assertIn(text, self.output.getvalue())
 
@@ -291,7 +301,8 @@ class AppRegressionTests(unittest.TestCase):
                 self.output.truncate()
                 self.app.display_movies([movie(i) for i in range(1, count + 1)], [],
                                         {i: {} for i in range(1, count + 1)})
-                self.assertEqual(self.output.getvalue().count("Vote count:"), min(count, 5))
+                self.assertEqual(self.output.getvalue().count("Rating:"), min(count, 5))
+                self.assertNotIn("Vote count:", self.output.getvalue())
         self.http.get.assert_not_called()
 
     def test_rating_input_recovers_and_preserves_valid_minimum(self):

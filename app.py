@@ -299,7 +299,7 @@ def choose_keyword_match_mode():
     return "strict"
 
 def choose_country():
-    print("Countries available:")
+    print("Origin countries available:")
 
     lista_paises = list(paises.keys())
     paises_escolhidos = []
@@ -313,7 +313,7 @@ def choose_country():
 
     while True:
         try:
-            escolha_pais = int(input("Choose the country number: "))
+            escolha_pais = int(input("Choose the origin country number: "))
         except ValueError:
             print("Please enter a number.")
             continue
@@ -330,9 +330,9 @@ def choose_country():
 
         if pais_codigo not in paises_escolhidos:
             paises_escolhidos.append(pais_codigo)
-            print(f"Country selected: {pais_nome}")
+            print(f"Origin country selected: {pais_nome}")
         else:
-            print("This country is already selected.")
+            print("This origin country is already selected.")
 
         print()
 
@@ -343,9 +343,9 @@ def choose_country():
             nome for nome, codigo in paises.items()
             if codigo in paises_escolhidos
         ]
-        print(f"Countries selected: {', '.join(nomes_selecionados)}")
+        print(f"Origin countries selected: {', '.join(nomes_selecionados)}")
     else:
-        print("Country: Any")
+        print("Origin countries: Any")
 
     print()
 
@@ -420,7 +420,6 @@ def build_parameters(
         "primary_release_date.lte": f"{ano_final}-12-31",
         "vote_average.gte": nota_minima,
         "vote_average.lte": nota_maxima,
-        "vote_count.gte": 100,
         "sort_by": "popularity.desc",
         "language": "en-US"
     }
@@ -485,8 +484,6 @@ def search_movies(parametros):
             and type(movie.get("vote_average")) in (int, float)
             and 0 <= movie["vote_average"] <= 10
             and math.isfinite(movie["vote_average"])
-            and type(movie.get("vote_count")) is int
-            and movie["vote_count"] >= 0
             for movie in results
         )
         or type(total_results) is not int
@@ -586,7 +583,6 @@ def display_movies(filmes, subgeneros_escolhidos, details_by_id):
         for numero, filme in enumerate(filmes[:5], start=1):
             print(f"{numero}. {filme['title']}")
             print(f"   Rating: {filme['vote_average']}")
-            print(f"   Vote count: {filme['vote_count']}")
 
             movie_id = filme["id"]
 
@@ -627,9 +623,9 @@ def display_movies(filmes, subgeneros_escolhidos, details_by_id):
                 ]
 
             if country_names:
-                print(f"   Country: {', '.join(country_names)}")
+                print(f"   Production countries: {', '.join(country_names)}")
             else:
-                print("   Country: Not available.")
+                print("   Production countries: Not available.")
 
             if subgeneros_escolhidos:
                 matched_styles = get_matched_styles(
