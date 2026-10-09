@@ -1,5 +1,7 @@
 # Movie Recommender
 
+[![Tests](https://github.com/MatheusMartins-Data/Movie-Recommender/actions/workflows/tests.yml/badge.svg)](https://github.com/MatheusMartins-Data/Movie-Recommender/actions/workflows/tests.yml)
+
 This Python program runs in the terminal and suggests up to five movies from TMDB. You choose a genre, optional styles and countries, a release-year range, and a rating range.
 
 For each movie, it shows the title, rating, genres, production countries, release date, and overview when available. If you select styles, it also shows which ones match the movie's TMDB keywords.
