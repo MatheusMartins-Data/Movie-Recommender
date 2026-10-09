@@ -1,25 +1,27 @@
-# Movie Recommender
+﻿# Movie Recommender
 
-A Python command-line application that recommends up to five movies using TMDB Discover. Choose a genre, optional styles/keywords and countries, a release-year range, and a rating range. Recommendations include ratings, vote counts, genres, production countries, matched styles, release dates, and overviews when available.
+This Python program runs in the terminal and suggests up to five movies from TMDB. You choose a genre, optional styles and countries, a release-year range, and a rating range.
 
-## Windows installation
+For each movie, it shows the title, rating, vote count, genres, production countries, release date, and overview when available. If you select styles, it also shows which ones match the movie's TMDB keywords.
 
-Install Python 3 with the Windows Python launcher available. Open PowerShell in the project folder, then create a virtual environment and install the dependencies:
+## Install on Windows
+
+Install Python 3 with the Windows Python launcher. Open PowerShell in the project folder and run:
 
 ```powershell
 py -m venv .venv
 & .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-If the project already has a working `.venv`, skip its creation. These commands use the environment's interpreter explicitly, so activation is optional.
+If you already have a working `.venv`, skip the first command. These commands use its Python interpreter directly, so you do not need to activate it.
 
-The external dependencies are `requests` and `python-dotenv`. Other application imports (`os`, `math`, and `datetime`) belong to the Python standard library. Dependency versions are not pinned.
+The program uses `requests` to call TMDB and `python-dotenv` to load the token from `.env`. Dependency versions are not pinned.
 
-## TMDB token configuration
+## Set up the TMDB token
 
-Obtain an API Read Access Token from your TMDB account's API settings. The application sends this token as a Bearer token; enter the token itself without a `Bearer ` prefix.
+Get an API Read Access Token from your TMDB account's API settings. Use the token itself, without the `Bearer ` prefix.
 
-If you do not already have a `.env` file, create one from the example:
+If you do not have a `.env` file, copy the example:
 
 ```powershell
 Copy-Item .env.example .env
@@ -31,66 +33,74 @@ Edit `.env` locally and replace the placeholder:
 TMDB_TOKEN=your_tmdb_api_read_access_token_here
 ```
 
-Alternatively, set `TMDB_TOKEN` in your process environment. An existing environment value takes precedence over `.env`. Missing or whitespace-only tokens cause the application to stop before asking for selections. Keep real tokens private; `.env` is excluded by `.gitignore`.
+You can also set `TMDB_TOKEN` as an environment variable. An existing environment value takes priority over `.env`. If the token is missing or contains only spaces, the program stops before asking for your choices.
+
+Keep your token private. The project's `.gitignore` excludes `.env`.
 
 ## Run
 
-From the project folder:
+From the project folder, run:
 
 ```powershell
 & .\.venv\Scripts\python.exe .\app.py
 ```
 
-Choose options by their displayed numbers. Enter `0` to finish selecting styles or countries. Normal application use requires an internet connection and a valid TMDB token.
+You need an internet connection and a valid TMDB token.
 
-## Filters and matching
+Choose menu options by number. Enter `0` when you finish selecting styles or countries.
 
-| Filter | Behavior |
+## How the search works
+
+| Filter | What it does |
 | --- | --- |
-| Genre | Select one genre from the built-in list. |
-| Styles / keywords | Select zero to five distinct keywords. Repeated selections are ignored. |
-| Country | Select zero or more distinct countries. Multiple countries use OR matching; no selection leaves this filter unrestricted. The query filters origin countries; displayed countries come from production metadata. |
-| Release years | Inclusive primary release dates, from January 1 of the start year through December 31 of the end year. Years must be between 1888 and the current year, in ascending order. |
-| Rating | Inclusive TMDB average rating between 0 and 10. Both limits must be finite and the minimum cannot exceed the maximum. |
-| Vote count | Always requires at least 100 votes. |
-| Ordering and language | Discover searches request descending popularity and English (`en-US`) metadata. |
+| Genre | Choose one genre from the menu. |
+| Styles / keywords | Choose up to five different styles. Each style is a TMDB keyword. Repeated choices are ignored. You can leave this filter empty. |
+| Countries | Choose any number of countries. A movie can match any one of them. Leave this filter empty to search all countries. The search uses origin countries; the results display production countries. |
+| Release years | Include both the start and end years. Years must be between 1888 and the current year. The start year cannot be after the end year. The search uses primary release dates. |
+| Rating | Set a minimum and maximum TMDB average rating between 0 and 10. Both limits are included. The minimum cannot be higher than the maximum. Values such as `nan` and `inf` are rejected. |
 
-With two or more styles, choose a matching mode:
+Every search requires at least 100 votes. TMDB searches are ordered by popularity, from highest to lowest, and request movie information in English (`en-US`).
 
-- **Broad:** requests movies matching at least one selected keyword. It also searches each keyword separately with the same genre, country, year, rating, and vote-count filters. Selection gives each style a turn, then fills remaining slots from the style pools and the general Broad results, removing duplicate movie IDs. The final list can differ from overall popularity order.
-- **Strict:** requests movies matching every selected keyword and displays up to five results in Discover order.
+### Broad and Strict
 
-With one keyword, that keyword is required and the mode prompt is skipped. With no keywords, there is no keyword filter. Broad and Strict only affect keyword matching; other filters remain in place.
+With two or more styles, you choose a matching mode:
 
-In Broad mode, styles are visited in the order you selected them. Changing that order can change the recommendation order and which movies fill the five available slots. Only the first Discover page from each search is considered.
+- **Broad:** a movie must match at least one selected style. The program searches for all selected styles together and also searches for each style separately. It first tries to pick one movie for each style. It then takes turns adding movies from each style's results and the combined search until it has up to five movies. Duplicate movies are removed. All other filters stay the same.
+- **Strict:** a movie must match every selected style. The program shows up to five movies in the order returned by TMDB.
 
-`Movies found` reports the total from the initial Discover response, not the number of recommendations displayed. Fewer than five recommendations are valid. Empty results produce a message suggesting broader criteria.
+For example, selecting `slasher` and `vampire` in Broad mode allows movies with either keyword. Strict requires both keywords on the same movie.
 
-## Regression tests
+With one style, that style is required and the program skips the mode question. With no styles, it applies no keyword filter.
 
-Run the standalone unittest suite from the project folder:
+In Broad mode, the program visits styles in the order you selected them. Changing that order can change both the movies chosen and their order. The final list may differ from TMDB's popularity order.
+
+`Movies found` shows the total reported by the initial TMDB search. It is not the number of recommendations displayed. The program can show fewer than five movies. If there are no matches, it suggests using broader filters.
+
+## Tests
+
+Run the tests from the project folder:
 
 ```powershell
 & .\.venv\Scripts\python.exe .\test_app_regression.py
 ```
 
-The suite installs simulated dotenv, environment, HTTP, and input boundaries before importing `app.py`. It does not read `.env`, use real credentials, make HTTP requests, or require interactive input. It covers API failures, Discover field validation, malformed optional metadata, dates, rating and year boundaries, filter preservation, Broad/Strict behavior, duplicates, caching, empty results, and short recommendation lists.
+The suite contains 21 regression tests with simulated responses. It replaces HTTP requests, token loading, environment access, and user input before importing the application. It does not read `.env`, use real credentials, or contact TMDB.
 
-The latest manual verification reported **21 tests passed**. These are offline regression tests; they do not verify current TMDB availability or real credentials.
+The tests cover request errors, response validation, missing movie information, dates, rating and year limits, filters, Broad and Strict matching, duplicate choices, movie-details caching, empty results, and lists with fewer than five movies. They do not check whether TMDB is currently available or whether a real token works.
 
-An optional syntax check, which does not launch the application:
+You can also check Python syntax without launching the program:
 
 ```powershell
 & .\.venv\Scripts\python.exe -m py_compile app.py test_app_regression.py
 ```
 
-## Known limitations
+## Limitations
 
-- Only the first Discover page of each search is used; the application does not paginate. It can show fewer than five movies even when more exist on later pages.
-- Broad mode balances available keyword pools but cannot guarantee a separate movie for every style. Movies may match multiple styles, and pools may be empty or overlap.
-- Genre, keyword, and country choices are built-in mappings. Results and matched-style labels depend on TMDB's metadata and keyword coverage.
-- Recommendations are based on filters and popularity, without viewing history, saved preferences, or personalization.
-- Invalid menu or range input generally ends the program; restart it to try again.
-- Requests use a 10-second timeout with no automatic retries. Connection errors, non-200 responses, invalid JSON, and invalid required response fields stop the run with an error message.
-- Optional metadata can be unavailable. A failed movie-details request stops the run rather than skipping that movie.
-- Dependencies are unpinned, and no Python version compatibility matrix has been established.
+- Only the first Discover page from each search is used. There is no search through later pages, so the program may show fewer than five movies even when more matches exist.
+- Broad mode cannot guarantee a different movie for every style. Some styles may have no results, and movies may match more than one style.
+- Genre, style, and country menus are defined in the code. Results and matched-style labels depend on TMDB's information and keyword coverage.
+- Recommendations use the selected filters and popularity. The program does not use viewing history or save preferences.
+- Invalid menu or range input usually ends the program. Restart it to try again.
+- Each request has a 10-second timeout and is not retried automatically. Connection errors, unsuccessful responses, invalid JSON, or invalid required fields stop the program with an error message. A failed movie-details request also stops the program.
+- Some movie information may be unavailable.
+- Dependency versions are not pinned. Compatibility across Python versions has not been established.
